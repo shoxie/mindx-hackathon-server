@@ -6,12 +6,12 @@ var db = require("./model/");
 require("dotenv").config();
 const mongoose = require("mongoose");
 const axios = require("axios");
-const {
-  teacherLogin,
-  teacherGetCourses,
-  deleteCourse,
-  createTeacher,
-} = require("./api/index.js");
+// const {
+//   teacherLogin,
+//   teacherGetCourses,
+//   deleteCourse,
+//   createTeacher,
+// } = require("./api/index.js");
 mongoose
   .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
