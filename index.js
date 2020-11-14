@@ -5,7 +5,13 @@ const utils = require("./utils");
 var db = require("./model/");
 require("dotenv").config();
 const mongoose = require("mongoose");
-
+const axios = require("axios");
+const {
+  teacherLogin,
+  teacherGetCourses,
+  deleteCourse,
+  createTeacher,
+} = require("./api/index.js");
 mongoose
   .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
@@ -16,59 +22,36 @@ mongoose
   .then(() => {
     console.log("CONNECTED DIT CON ME MAY");
   });
-// import { StringeeClient, StringeeChat } from "stringee-chat-js-sdk";
-// var stringeeClient;
-// stringeeClient.on("connect", function () {
-//   console.log("++++++++++++++ connected to StringeeServer");
-// });
-
-// stringeeClient.on("authen", function (res) {
-//   console.log("authen", res);
-// });
-
-// stringeeClient.on("disconnect", function () {
-//   console.log("++++++++++++++ disconnected");
-// });
-// sstringeeClient = new StringeeClient();
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
-io.on("connection", (socket) => {
-  const clientRoom = getClientRoom();
-
-  socket.join(clientRoom);
-  if (io.sockets.adapter.rooms[clientRoom].length < 2) {
-    io.in(clientRoom).emit("statusRoom", "Đang chờ người lạ ...");
-  } else {
-    clientRoom;
-    io.in(myRoom).emit("statusRoom", "Người lạ đã vào phòng");
-  }
-
-  socket.on("disconnect", (reason) => {
-    socket
-      .to(clientRoom)
-      .emit("statusRoom", "Người lạ đã thoát. Đang chờ người tiếp theo ....");
-  });
+// console.log(teacherGetCourses().data.data);
+io.on("connection", async (socket) => {
   socket.emit("USERID", socket.id);
-  socket.on("receiveMessage", async (data) => {
-    db.addMessage(data.msg);
+  let courses = await axios.get(
+    "https://5fae34c963e40a0016d896b2.mockapi.io/courses"
+  );
+  socket.emit("COURSES", courses.data);
+  socket.on("messageSent", async (msg) => {
+    db.addMessage(msg);
     let chargeBackData = await db.getAll();
     socket.emit("REFRESHDATA", chargeBackData);
+  });
+  socket.on("login", async (data) => {
+    // console.log(data);
+    let users = await axios.get(
+      "https://5fae34c963e40a0016d896b2.mockapi.io/users"
+    );
+
+    for (let i = 0; i < users.data.length; i++) {
+      if (
+        users.data[i].username === data.username &&
+        users.data[i].password === data.password
+      ) {
+        socket.emit("LOGIN", true);
+        break;
+      }
+    }
   });
 });
 
 http.listen(8679, () => {
   console.log("listening on *:8679");
 });
-function getClientRoom() {
-  let index = 0;
-  while (true) {
-    if (
-      !io.sockets.adapter.rooms[index] ||
-      io.sockets.adapter.rooms[index].length < 2
-    ) {
-      return index;
-    }
-    index++;
-  }
-}
